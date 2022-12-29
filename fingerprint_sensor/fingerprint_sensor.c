@@ -8,7 +8,8 @@
 #include <termios.h> // Contains POSIX terminal control definitions
 #include <unistd.h> // write(), read(), close()
 #include <stdlib.h>
-
+#include <pthread.h>
+#include <arpa/inet.h>
 
 int serial_port;
 
@@ -284,10 +285,102 @@ void empty_fingerstore(){
 	
 }
 
-void main(){
+void print_help(){
+	printf("\nUsage:\n./fingerprint_sensor [mode] [additional args]\nModes:\ncheck - check if fingerprint is valid\nreg - register a new fingerprint (additional arg of index req)\nindex - display index table\nledTest - Test LEDs\ndelete - remove a fingerprint (additional arg of index req)\nempty - empty the fingerprint database\n");
+	return;
+}
+
+int stop_bg = 0;
+
+void *bg_thread(){
+	while(stop_bg == 0){
+		check_finger();	
+	}
+	printf("\nStopping BG\n");
+}
+
+void main(int argc, char *argv[]) {
 	setup();
 	set_led(1,4);
-	while (1){
+
+	char *ip = "10.1.4.198";
+  	int port = 5566;
+
+  	int sock;
+  	struct sockaddr_in addr;
+  	socklen_t addr_size;
+  	char buffer[1024];
+  	int n;
+
+ 	sock = socket(AF_INET, SOCK_STREAM, 0);
+  	if (sock < 0){
+    		perror("[-]Socket error");
+		close(serial_port);
+    		exit(1);
+ 	}
+  	printf("[+]TCP server socket created.\n");
+
+  	memset(&addr, '\0', sizeof(addr));
+  	addr.sin_family = AF_INET;
+  	addr.sin_port = port;
+  	addr.sin_addr.s_addr = inet_addr(ip);
+
+  	if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
+        	printf("connection with the server failed...\n");
+		close(serial_port);
+        	exit(1);
+    	}
+    	else{
+        	printf("connected to the server..\n");
+    	}
+
+  	bzero(buffer, 1024);
+	strcpy(buffer, "RPIClientConnect");
+  	send(sock, buffer, strlen(buffer), 0);
+
+  	while(1){
+  		bzero(buffer, 1024);
+  		recv(sock, buffer, sizeof(buffer), 0);
+  		printf("Server: %s\n", buffer);
+
+		if (strcmp(buffer, "exit\n") == 0){
+            		close(sock);
+            		break;
+        	}else if(strcmp(buffer, "check\n") == 0){
+			check_finger();
+		}else if(strcmp(buffer, "reg\n") == 0){
+			if (argc < 3){
+				printf("\nError: Missing additional argument\n");
+				print_help();
+			}else{
+				int reg_index = atoi(argv[2]);
+				register_finger(reg_index);
+			}
+		}else if(strcmp(buffer, "index\n") == 0){
+			ReadIndexTable(0);
+		}else if(strcmp(buffer, "ledTest\n") == 0){
+			LEDTest();
+		}else if(strcmp(buffer, "delete\n") == 0){
+			if (argc < 3){
+				printf("\nError: Missing additional argument\n");
+				print_help();
+			}else{
+				int del_index = atoi(argv[2]);
+				delete_finger(del_index);
+			}
+		}else if(strcmp(buffer, "empty\n") == 0){
+			empty_fingerstore();
+		}else if(strcmp(buffer, "bg\n") == 0){
+			pthread_t thread_id;
+			pthread_create(&thread_id, NULL, bg_thread, NULL);
+
+		}else{
+			printf("\nError: Invalid mode\n");
+			print_help();
+		}
+  	}
+
+	/*while (1){
 		printf("\nMenu: \n1. Check Finger\n2. Register Finger\n3. Display Index\n4. LED Test\n5. Delete Fingerprint\n6. Empty Fingerstore\n0. Quit\nInput: ");
 		int input;
 		scanf("%d", &input);
@@ -331,5 +424,48 @@ void main(){
 			default:
 				printf("\nInvalid Option\n");
 		}
-	}	
+	} 
+	if (argc < 2){
+		printf("\nError: Not Enough Arguments\n");
+		print_help();
+	}
+	else{
+		if(strcmp(argv[1], "check") == 0){
+			check_finger();
+		}else if(strcmp(argv[1], "reg") == 0){
+			if (argc < 3){
+				printf("\nError: Missing additional argument\n");
+				print_help();
+			}else{
+				int reg_index = atoi(argv[2]);
+				register_finger(reg_index);
+			}
+		}else if(strcmp(argv[1], "index") == 0){
+			ReadIndexTable(0);
+		}else if(strcmp(argv[1], "ledTest") == 0){
+			LEDTest();
+		}else if(strcmp(argv[1], "delete") == 0){
+			if (argc < 3){
+				printf("\nError: Missing additional argument\n");
+				print_help();
+			}else{
+				int del_index = atoi(argv[2]);
+				delete_finger(del_index);
+			}
+		}else if(strcmp(argv[1], "empty") == 0){
+			empty_fingerstore();
+		}else if(strcmp(argv[1], "bg") == 0){
+			pthread_t thread_id;
+			pthread_create(&thread_id, NULL, bg_thread, NULL);
+
+		}else{
+			printf("\nError: Invalid mode\n");
+			print_help();
+		}
+	}
+	pthread_exit(NULL);
+	*/
+	set_led(1,4);
+	close(serial_port);
+	return;
 }
