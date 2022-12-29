@@ -12,6 +12,8 @@
 #include <arpa/inet.h>
 
 int serial_port;
+int stop_bg = 0;
+int bg_running = 0;
 
 void setup(){
 	serial_port = open("/dev/ttyS0", O_RDWR);
@@ -171,15 +173,17 @@ void LEDTest(){
 void check_finger(){
 	set_led(3,3);
 	int found = 0;
-	while(found == 0){
+	while(found == 0 && stop_bg == 0){
 		unsigned char imageRes = GenImg();
 		if (imageRes == 0){
 			found = 1;
 		}
 	}
-	ImageToCharFile(1);	
-	GenerateTemplate();
-	Search();
+	if (!stop_bg){
+		ImageToCharFile(1);	
+		GenerateTemplate();
+		Search();
+	}
 }
 
 int GetImageFromScanner(){
@@ -290,13 +294,15 @@ void print_help(){
 	return;
 }
 
-int stop_bg = 0;
 
 void *bg_thread(){
+	printf("\nStarting BG\n");
 	while(stop_bg == 0){
 		check_finger();	
 	}
+	stop_bg = 0;
 	printf("\nStopping BG\n");
+	bg_running = 0;
 }
 
 void main(int argc, char *argv[]) {
@@ -343,6 +349,16 @@ void main(int argc, char *argv[]) {
   		recv(sock, buffer, sizeof(buffer), 0);
   		printf("Server: %s\n", buffer);
 
+		int was_bg = 0;
+
+		if (bg_running){
+			stop_bg = 1;
+			was_bg = 1;
+			while(bg_running){
+				sleep(1);
+			}
+		}
+
 		if (strcmp(buffer, "exit\n") == 0){
             		close(sock);
             		break;
@@ -372,12 +388,20 @@ void main(int argc, char *argv[]) {
 			empty_fingerstore();
 		}else if(strcmp(buffer, "bg\n") == 0){
 			pthread_t thread_id;
+			bg_running = 1;
 			pthread_create(&thread_id, NULL, bg_thread, NULL);
 
 		}else{
 			printf("\nError: Invalid mode\n");
 			print_help();
 		}
+
+		if (was_bg){
+			pthread_t thread_id1;
+			bg_running = 1;
+			pthread_create(&thread_id1, NULL, bg_thread, NULL);
+		}
+
   	}
 
 	/*while (1){
