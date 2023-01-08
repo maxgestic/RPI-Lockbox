@@ -309,7 +309,7 @@ void main(int argc, char *argv[]) {
 	setup();
 	set_led(1,4);
 
-	char *ip = "10.1.4.198";
+	char *ip = "192.168.2.36";
   	int port = 5566;
 
   	int sock;
@@ -365,25 +365,25 @@ void main(int argc, char *argv[]) {
         	}else if(strcmp(buffer, "check\n") == 0){
 			check_finger();
 		}else if(strcmp(buffer, "reg\n") == 0){
-			if (argc < 3){
-				printf("\nError: Missing additional argument\n");
-				print_help();
-			}else{
-				int reg_index = atoi(argv[2]);
-				register_finger(reg_index);
-			}
+			bzero(buffer, 1024);
+			strcpy(buffer, "ack");
+			send(sock, buffer, strlen(buffer), 0);
+			bzero(buffer, 1024);
+			recv(sock, buffer, sizeof(buffer), 0);
+			int reg_index = atoi(buffer);
+			register_finger(reg_index);
 		}else if(strcmp(buffer, "index\n") == 0){
 			ReadIndexTable(0);
 		}else if(strcmp(buffer, "ledTest\n") == 0){
 			LEDTest();
 		}else if(strcmp(buffer, "delete\n") == 0){
-			if (argc < 3){
-				printf("\nError: Missing additional argument\n");
-				print_help();
-			}else{
-				int del_index = atoi(argv[2]);
-				delete_finger(del_index);
-			}
+			bzero(buffer, 1024);
+			strcpy(buffer, "ack");
+			send(sock, buffer, strlen(buffer), 0);
+			bzero(buffer, 1024);
+			recv(sock, buffer, sizeof(buffer), 0);
+			int del_index = atoi(buffer);
+			delete_finger(del_index);
 		}else if(strcmp(buffer, "empty\n") == 0){
 			empty_fingerstore();
 		}else if(strcmp(buffer, "bg\n") == 0){
