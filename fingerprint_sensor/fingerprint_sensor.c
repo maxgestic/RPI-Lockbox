@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <arpa/inet.h>
+#include <sys/ioctl.h>
+
+#include "lock.h"
 
 int serial_port;
 int stop_bg = 0;
@@ -24,7 +27,7 @@ void setup(){
 	}
 
 	struct termios tty;
-	
+
 	if(tcgetattr(serial_port, &tty) != 0) {
     		printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
 	}
@@ -47,12 +50,12 @@ void setup(){
 	tty.c_cc[VMIN] = 0;
 	cfsetispeed(&tty, B57600);
 	cfsetospeed(&tty, B57600);
-	
+
 	if (tcsetattr(serial_port, TCSANOW, &tty) != 0) {
  		printf("Error %i from tcsetattr: %s\n", errno, strerror(errno));
 	}
 
-	return;	
+	return;
 }
 
 void send_packet(unsigned char data[], int len){
@@ -62,7 +65,7 @@ void send_packet(unsigned char data[], int len){
     	}
 	unsigned char checksum = 0x00;
 	for (int i = 6; i < len - 2; i++){
-		checksum = checksum + data_to_send[i];	
+		checksum = checksum + data_to_send[i];
 	}
 	data_to_send[len-2] = 0x00;
 	data_to_send[len-1] = checksum;
@@ -78,7 +81,7 @@ unsigned char *get_packet(int size){
 		int j = read(serial_port, &byte, 1);
 		returnArray[i] = byte;
 	}
-	
+
 	return returnArray;
 }
 
@@ -100,7 +103,7 @@ void check_sensor(){
 	get_packet(12);
 }
 
-void ReadSysPar(){	
+void ReadSysPar(){
 	unsigned char msg[12] = {0xef,0x01,0xff,0xff,0xff,0xff,0x01,0x00,0x03,0x0f,0xCC,0xCC};
 	send_packet(msg,sizeof(msg));
 	get_packet(28);
@@ -134,6 +137,15 @@ void Search(){
 	unsigned char *return_data = get_packet(16);
 	if (return_data[9] == 0){
 		set_led(2,3);
+		int fd, ret;
+		fd = open("//dev//lockdev", O_RDWR);
+		if (fd < 0) {
+			printf("Can't open device file: %s\n", DEVICE_NAME);
+		}
+		else{
+			ret = ioctl(fd, LOCK_TOGGLE);
+		}
+		close(fd);
 		printf("\nMatch found\n");
 		sleep(2);
 		set_led(1,4);
@@ -142,7 +154,7 @@ void Search(){
 		printf("\nNo Match found\n");
 		sleep(2);
 		set_led(1,4);
-	}	
+	}
 	free(return_data);
 }
 
@@ -180,7 +192,7 @@ void check_finger(){
 		}
 	}
 	if (!stop_bg){
-		ImageToCharFile(1);	
+		ImageToCharFile(1);
 		GenerateTemplate();
 		Search();
 	}
@@ -245,7 +257,7 @@ void register_finger(int index){
 					break;
 				default:
 					printf("\nError Storing Fingerprint (Error Code 0x%x)\n", return_code);
-					break;	
+					break;
 			}
 		}
 	}
@@ -266,7 +278,7 @@ void delete_finger(int index){
 			break;
 		default:
 			printf("\nError deleting fingerprint id %i (Error Code 0x%x)\n", index, return_code);
-		       	break;	
+		       	break;
 	}
 	return;
 }
@@ -283,22 +295,16 @@ void empty_fingerstore(){
 			break;
 		default:
 			printf("\nError deleting fingerprint store (Error Code 0x%x)\n", return_code);
-		       	break;	
+		       	break;
 	}
 	return;
-	
-}
 
-void print_help(){
-	printf("\nUsage:\n./fingerprint_sensor [mode] [additional args]\nModes:\ncheck - check if fingerprint is valid\nreg - register a new fingerprint (additional arg of index req)\nindex - display index table\nledTest - Test LEDs\ndelete - remove a fingerprint (additional arg of index req)\nempty - empty the fingerprint database\n");
-	return;
 }
-
 
 void *bg_thread(){
 	printf("\nStarting BG\n");
 	while(stop_bg == 0){
-		check_finger();	
+		check_finger();
 	}
 	stop_bg = 0;
 	printf("\nStopping BG\n");
@@ -309,7 +315,7 @@ void main(int argc, char *argv[]) {
 	setup();
 	set_led(1,4);
 
-	char *ip = "192.168.2.36";
+	char *ip = "10.1.4.198";
   	int port = 5566;
 
   	int sock;
@@ -393,7 +399,6 @@ void main(int argc, char *argv[]) {
 
 		}else{
 			printf("\nError: Invalid mode\n");
-			print_help();
 		}
 
 		if (was_bg){
