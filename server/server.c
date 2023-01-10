@@ -3,9 +3,20 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+
+#define BUFFER_SIZE 50
  
 int main(){
- 
+  char last_inst[BUFFER_SIZE] = "";
+
+  fclose(fopen("instruction", "w")); 
+  char buff[BUFFER_SIZE];
+  FILE *f = fopen("instruction", "r");
+  fgets(buff, BUFFER_SIZE, f);
+  strcpy(last_inst, buff);
+  printf("String read: %s\n", buff);
+  fclose(f); 
+
   char *ip = "0.0.0.0";
   int port = 50505;
  
@@ -49,46 +60,57 @@ int main(){
         close(client_sock);
     }
     else{
+	
         while(1){
+  	    char buff[BUFFER_SIZE];
+	    FILE *f = fopen("instruction", "r");
+  	    fgets(buff, BUFFER_SIZE, f);
+	    if (strcmp(buff, last_inst) == 0){
+		//same as before
+		sleep(1);
+	    }
+	    else{
+		strcpy(last_inst, buff);
+  	    	printf("String read: %s\n", buff);
+  	    	fclose(f);
+		
+            	bzero(buffer, sizeof(buffer));
+		strcpy(buffer, buff);
 
-            bzero(buffer, sizeof(buffer));
-            printf("Enter a string : ");
-            n = 0;
-            while ((buffer[n++] = getchar()) != '\n');
-            printf("Server: %s\n", buffer);
-            send(client_sock, buffer, strlen(buffer), 0);
+            	printf("Server: %s\n", buffer);
+            	send(client_sock, buffer, strlen(buffer), 0);
 
-            if (strcmp(buffer, "exit\n") == 0){
-                close(client_sock);
-                break;
-            }
-            else if (strcmp(buffer, "reg\n") == 0){
-                bzero(buffer, 1024);
-                recv(client_sock, buffer, sizeof(buffer), 0);
-                if (strcmp(buffer, "ack") == 0){
-                    bzero(buffer, sizeof(buffer));
-                    printf("Enter an Index to store finger in: ");
-                    n = 0;
-                    while ((buffer[n++] = getchar()) != '\n');
-                    printf("Server: %s\n", buffer);
-                    send(client_sock, buffer, strlen(buffer), 0);
+            	if (strcmp(buffer, "exit\n") == 0){
+                	close(client_sock);
+                	break;
+            	}
+            	else if (strcmp(buffer, "reg\n") == 0){
+                	bzero(buffer, 1024);
+                	recv(client_sock, buffer, sizeof(buffer), 0);
+                	if (strcmp(buffer, "ack") == 0){
+                    		bzero(buff, sizeof(buff));
+				FILE *f = fopen("index", "r");
+  	    			fgets(buff, BUFFER_SIZE, f);
+  	    			printf("Index Read: %s\n", buff);
+  	    			fclose(f);
+				fclose(fopen("index", "w")); 
+                    		send(client_sock, buff, strlen(buff), 0);
+                	}
+            	}
+            	else if (strcmp(buffer, "delete\n") == 0){
+                	bzero(buffer, 1024);
+                	recv(client_sock, buffer, sizeof(buffer), 0);
+                	if (strcmp(buffer, "ack") == 0){
+                    		bzero(buffer, sizeof(buffer));
+                    		printf("Enter an Index to delete finger from: ");
+                    		n = 0;
+                    		while ((buffer[n++] = getchar()) != '\n');
+                    		printf("Server: %s\n", buffer);
+                    		send(client_sock, buffer, strlen(buffer), 0);
+			}
                 }
             }
-            else if (strcmp(buffer, "delete\n") == 0){
-                bzero(buffer, 1024);
-                recv(client_sock, buffer, sizeof(buffer), 0);
-                if (strcmp(buffer, "ack") == 0){
-                    bzero(buffer, sizeof(buffer));
-                    printf("Enter an Index to delete finger from: ");
-                    n = 0;
-                    while ((buffer[n++] = getchar()) != '\n');
-                    printf("Server: %s\n", buffer);
-                    send(client_sock, buffer, strlen(buffer), 0);
-                }
-            }
-
         }
-
         printf("[+]Client disconnected.\n\n");
     }
   }
