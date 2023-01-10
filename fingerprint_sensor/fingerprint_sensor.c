@@ -315,8 +315,8 @@ void main(int argc, char *argv[]) {
 	setup();
 	set_led(1,4);
 
-	char *ip = "10.1.4.198";
-  	int port = 5566;
+	char *ip = "52.91.154.13";
+  	int port = 50505;
 
   	int sock;
   	struct sockaddr_in addr;
@@ -334,7 +334,7 @@ void main(int argc, char *argv[]) {
 
   	memset(&addr, '\0', sizeof(addr));
   	addr.sin_family = AF_INET;
-  	addr.sin_port = port;
+  	addr.sin_port = htons(port);
   	addr.sin_addr.s_addr = inet_addr(ip);
 
   	if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
