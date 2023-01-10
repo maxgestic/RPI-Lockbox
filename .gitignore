@@ -51,4 +51,4 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-fingerpint_sensor/fingerprint_sensor
+fingerprint_sensor/fingerprint_sensor
