@@ -6,8 +6,8 @@
  
 int main(){
  
-  char *ip = "10.1.4.198";
-  int port = 5566;
+  char *ip = "0.0.0.0";
+  int port = 50505;
  
   int server_sock, client_sock;
   struct sockaddr_in server_addr, client_addr;
@@ -24,7 +24,7 @@ int main(){
  
   memset(&server_addr, '\0', sizeof(server_addr));
   server_addr.sin_family = AF_INET;
-  server_addr.sin_port = port;
+  server_addr.sin_port = htons(port);
   server_addr.sin_addr.s_addr = inet_addr(ip);
  
   n = bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
