@@ -350,6 +350,11 @@ void main(int argc, char *argv[]) {
 	strcpy(buffer, "RPIClientConnect");
   	send(sock, buffer, strlen(buffer), 0);
 
+	pthread_t thread_id;
+	bg_running = 1;
+	pthread_create(&thread_id, NULL, bg_thread, NULL);
+
+
   	while(1){
   		bzero(buffer, 1024);
   		recv(sock, buffer, sizeof(buffer), 0);
@@ -392,12 +397,14 @@ void main(int argc, char *argv[]) {
 			delete_finger(del_index);
 		}else if(strcmp(buffer, "empty\n") == 0){
 			empty_fingerstore();
-		}else if(strcmp(buffer, "bg\n") == 0){
+		}
+		/*else if(strcmp(buffer, "bg\n") == 0){
 			pthread_t thread_id;
 			bg_running = 1;
 			pthread_create(&thread_id, NULL, bg_thread, NULL);
 
-		}else{
+		}*/
+		else{
 			printf("\nError: Invalid mode\n");
 		}
 
