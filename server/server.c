@@ -5,17 +5,20 @@
 #include <arpa/inet.h>
 
 #define BUFFER_SIZE 50
+
+void empty_file(){
+  /*FILE *f1 = fopen("instruction", "w");
+  fprintf(f1, "");
+  fclose(f1);
+  FILE *f2 = fopen("index", "w");
+  fprintf(f2, "");
+  fclose(f2);*/
+  fclose(fopen("instruction", "w"));
+  fclose(fopen("index", "w"));
+}
  
 int main(){
-  char last_inst[BUFFER_SIZE] = "";
-
-  fclose(fopen("instruction", "w")); 
-  char buff[BUFFER_SIZE];
-  FILE *f = fopen("instruction", "r");
-  fgets(buff, BUFFER_SIZE, f);
-  strcpy(last_inst, buff);
-  printf("String read: %s\n", buff);
-  fclose(f); 
+  empty_file();
 
   char *ip = "0.0.0.0";
   int port = 50505;
@@ -60,19 +63,18 @@ int main(){
         close(client_sock);
     }
     else{
-	
+  	char buff[BUFFER_SIZE];
         while(1){
-  	    char buff[BUFFER_SIZE];
+	    bzero(buff, sizeof(buff));
 	    FILE *f = fopen("instruction", "r");
   	    fgets(buff, BUFFER_SIZE, f);
-	    if (strcmp(buff, last_inst) == 0){
+	    if (strlen(buff) <= 0){
 		//same as before
 		sleep(1);
 	    }
 	    else{
-		strcpy(last_inst, buff);
-  	    	printf("String read: %s\n", buff);
-  	    	fclose(f);
+		printf("String read: %s Size: %d\n", buff, strlen(buff));
+		fclose(f);
 		
             	bzero(buffer, sizeof(buffer));
 		strcpy(buffer, buff);
@@ -109,7 +111,10 @@ int main(){
                     		send(client_sock, buffer, strlen(buffer), 0);
 			}
                 }
+	    sleep(1);
+	    empty_file();
             }
+
         }
         printf("[+]Client disconnected.\n\n");
     }

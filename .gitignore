@@ -54,3 +54,5 @@ dkms.conf
 fingerprint_sensor/fingerprint_sensor
 server/server
 webapp/.idea/*
+server/index
+server/instruction
