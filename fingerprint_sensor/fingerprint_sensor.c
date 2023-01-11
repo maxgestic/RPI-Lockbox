@@ -132,7 +132,7 @@ void GenerateTemplate(){
 }
 
 void Search(){
-	unsigned char msg[17] = {0xef,0x01,0xff,0xff,0xff,0xff,0x01,0x00,0x08,0x04,0x01,0x00,0x01,0x00,0x03,0xCC,0xCC};
+	unsigned char msg[17] = {0xef,0x01,0xff,0xff,0xff,0xff,0x01,0x00,0x08,0x04,0x01,0x00,0x01,0x00,0x0a,0xCC,0xCC};
 	send_packet(msg, sizeof(msg));
 	unsigned char *return_data = get_packet(16);
 	if (return_data[9] == 0){
@@ -199,7 +199,6 @@ void check_finger(){
 }
 
 int GetImageFromScanner(){
-	set_led(3,3);
 	printf("\nPlace Finger on Fingerprint scanner\n");
 	int length = 15;
 	int counter;
@@ -235,9 +234,11 @@ unsigned char StoreTemplate(int bufferID, int index){
 }
 
 void register_finger(int index){
+	set_led(2, 1);
 	int wasFingerOn = GetImageFromScanner();
 	if (wasFingerOn == 1){
 		ImageToCharFile(1);
+		set_led(2,4);
 		printf("\nRemove finger from Scanner\n");
 		int empty = 0;
 		while(empty == 0){
@@ -246,6 +247,7 @@ void register_finger(int index){
 				empty = 1;
 			}
 		}
+		set_led(2,1);
 		wasFingerOn = GetImageFromScanner();
 		if (wasFingerOn == 1){
 			ImageToCharFile(2);
@@ -261,7 +263,6 @@ void register_finger(int index){
 			}
 		}
 	}
-	set_led(1,4);
 }
 
 void delete_finger(int index){
@@ -315,7 +316,7 @@ void main(int argc, char *argv[]) {
 	setup();
 	set_led(1,4);
 
-	char *ip = "52.91.154.13";
+	char *ip = "18.235.114.59";
   	int port = 50505;
 
   	int sock;
@@ -383,6 +384,23 @@ void main(int argc, char *argv[]) {
 			recv(sock, buffer, sizeof(buffer), 0);
 			int reg_index = atoi(buffer);
 			register_finger(reg_index);
+			set_led(2,4);
+			sleep(1);
+			set_led(2,3);
+			sleep(1);
+			set_led(1,3);
+			sleep(1);
+			set_led(2,3);
+			sleep(1);
+			set_led(1,3);
+			sleep(1);
+			int empty = 0;
+			while(empty == 0){
+				unsigned char imageRes = GenImg();
+				if (imageRes != 0){
+					empty = 1;
+				}
+			}
 		}else if(strcmp(buffer, "index\n") == 0){
 			ReadIndexTable(0);
 		}else if(strcmp(buffer, "ledTest\n") == 0){
@@ -398,12 +416,6 @@ void main(int argc, char *argv[]) {
 		}else if(strcmp(buffer, "empty\n") == 0){
 			empty_fingerstore();
 		}
-		/*else if(strcmp(buffer, "bg\n") == 0){
-			pthread_t thread_id;
-			bg_running = 1;
-			pthread_create(&thread_id, NULL, bg_thread, NULL);
-
-		}*/
 		else{
 			printf("\nError: Invalid mode\n");
 		}
