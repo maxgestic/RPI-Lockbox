@@ -144,6 +144,8 @@ void Search(){
 		}
 		else{
 			ret = ioctl(fd, LOCK_TOGGLE);
+			sleep(5);
+			ret = ioctl(fd, LOCK_TOGGLE);
 		}
 		close(fd);
 		printf("\nMatch found\n");
