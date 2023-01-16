@@ -103,12 +103,13 @@ int main(){
                 	bzero(buffer, 1024);
                 	recv(client_sock, buffer, sizeof(buffer), 0);
                 	if (strcmp(buffer, "ack") == 0){
-                    		bzero(buffer, sizeof(buffer));
-                    		printf("Enter an Index to delete finger from: ");
-                    		n = 0;
-                    		while ((buffer[n++] = getchar()) != '\n');
-                    		printf("Server: %s\n", buffer);
-                    		send(client_sock, buffer, strlen(buffer), 0);
+				bzero(buff, sizeof(buff));
+				FILE *f1 = fopen("index", "r");
+  	    			fgets(buff, BUFFER_SIZE, f1);
+  	    			printf("Index Read: %s\n", buff);
+  	    			fclose(f1);
+				fclose(fopen("index", "w")); 
+                    		send(client_sock, buff, strlen(buff), 0);
 			}
                 }
 	    sleep(1);
